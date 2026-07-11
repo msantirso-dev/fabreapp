@@ -79,13 +79,20 @@ Idempotente: completar dos veces no duplica efectos. Si Google falla, la finaliz
 
 ## Deploy en Coolify / producción
 
+Dominio: **https://app.fabregad.com.ar**
+
 1. Conectá el repo `msantirso-dev/fabreapp` en Coolify.
 2. Build con el `Dockerfile` del proyecto.
-3. Configurá variables de entorno (copiá desde `.env.example`): `SECRET_KEY`, `DATABASE_URL` (Postgres), `APP_BASE_URL`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, Google OAuth, etc.
-4. En Google Cloud, agregá la URI de producción:
-   `https://TU-DOMINIO/integraciones/google/callback/`
-5. Cron (cada 10–60 min): `python manage.py sync_google_calendar`
-6. Primer deploy: `python manage.py migrate` y `python manage.py createsuperuser`
+3. Cargá las variables de `deploy/coolify.env.example` (ajustá `SECRET_KEY`, `DATABASE_URL` y el secret de Google).
+4. En Google Cloud → Credenciales OAuth, agregá URI de redirección:
+   `https://app.fabregad.com.ar/integraciones/google/callback/`
+5. En Pantalla de consentimiento OAuth, agregá usuarios de prueba (ej. `cecilia@fabregad.com.ar`) o publicá la app.
+6. Cron cada 10–60 min: `python manage.py sync_google_calendar`
+7. Tras el primer deploy:
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
 
 ## Google Calendar (OAuth desde la UI)
 
