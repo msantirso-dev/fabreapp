@@ -25,5 +25,7 @@ PY
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
-PORT="${PORT:-8000}"
-exec gunicorn config.wsgi:application --bind "0.0.0.0:${PORT}" --workers 2 --timeout 120
+# Coolify a veces inyecta PORT=3000; el compose expone 8000.
+# Forzamos 8000 salvo que se defina APP_PORT explícitamente.
+APP_PORT="${APP_PORT:-8000}"
+exec gunicorn config.wsgi:application --bind "0.0.0.0:${APP_PORT}" --workers 2 --timeout 120

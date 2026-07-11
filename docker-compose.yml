@@ -24,6 +24,7 @@ services:
       - "8000"
     environment:
       PORT: "8000"
+      APP_PORT: "8000"
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-app.fabregad.com.ar}
