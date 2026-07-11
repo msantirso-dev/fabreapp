@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ deadline.obligation_name }} – {{ deadline.client.name }}{% endblock %}
+{% block content %}
+<section class="page-head with-actions">
+  <div>
+    <p class="eyebrow"><a href="{% url 'deadline-list' %}">← Vencimientos</a></p>
+    <h1>{{ deadline.obligation_name }}</h1>
+    <p class="lede">{{ deadline.client.name }} · CUIT {{ deadline.client.cuit }}</p>
+  </div>
+  <div class="actions">
+    {% if deadline.status != "COMPLETED" and deadline.status != "CANCELLED" %}
+      <a class="btn" href="{% url 'deadline-edit' deadline.id %}">Editar</a>
+    {% endif %}
+    {% if can_complete and deadline.status != "COMPLETED" and deadline.status != "CANCELLED" and deadline.status != "NOT_APPLICABLE" %}
+      <a class="btn primary" href="{% url 'deadline-complete' deadline.id %}">Completar</a>
+    {% endif %}
+  </div>
+</section>
+
+<dl class="detail-grid">
+  <div><dt>Período fiscal</dt><dd>{{ deadline.period }}</dd></div>
+  <div><dt>Fecha de vencimiento</dt><dd>{{ deadline.due_date|date:"d/m/Y" }}</dd></div>
+  <div><dt>Estado</dt><dd>{{ deadline.get_status_display }}</dd></div>
+  <div><dt>Responsable</dt><dd>{% if deadline.assigned_to %}{{ deadline.assigned_to.get_full_name_or_username }}{% else %}Sin asignar{% endif %}</dd></div>
+  <div><dt>Creado por</dt><dd>{% if deadline.created_by %}{{ deadline.created_by.get_full_name_or_username }}{% else %}—{% endif %}</dd></div>
+  <div><dt>Completado por</dt><dd>{% if deadline.completed_by %}{{ deadline.completed_by.get_full_name_or_username }}{% else %}—{% endif %}</dd></div>
+  <div><dt>Finalización</dt><dd>{% if deadline.completed_at %}{{ deadline.completed_at }}{% else %}—{% endif %}</dd></div>
+  <div><dt>Observaciones</dt><dd>{{ deadline.observations|default:"—" }}</dd></div>
+  <div><dt>Evento Google</dt><dd>{{ deadline.google_calendar_event_id|default:"—" }}</dd></div>
+  <div><dt>Sync</dt><dd>{{ deadline.get_google_sync_status_display }}{% if deadline.google_sync_error %} — {{ deadline.google_sync_error }}{% endif %}</dd></div>
+</dl>
+
+<section class="audit-section">
+  <h2>Historial</h2>
+  <ul class="audit-list">
+    {% for log in audit_logs %}
+    <li>
+      <strong>{{ log.action }}</strong>
+      · {{ log.created_at }}
+      {% if log.actor %} · {{ log.actor.get_full_name_or_username }}{% endif %}
+      {% if log.previous_status or log.new_status %}
+        · {{ log.previous_status|default:"—" }} → {{ log.new_status|default:"—" }}
+      {% endif %}
+      {% if log.observation %}<div class="muted">{{ log.observation }}</div>{% endif %}
+      {% if log.google_sync_result %}<div class="muted">Sync: {{ log.google_sync_result }}</div>{% endif %}
+    </li>
+    {% empty %}
+    <li>Sin movimientos registrados.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

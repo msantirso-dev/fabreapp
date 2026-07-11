@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Google Calendar – Integraciones{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow"><a href="{% url 'deadline-list' %}">← Inicio</a></p>
+  <h1>Google Calendar</h1>
+  <p class="lede">
+    Conectá la cuenta Google del estudio para crear y actualizar el calendario compartido
+    <strong>Vencimientos – Estudio Contable</strong>. Los cambios se ven en todas las cuentas
+    con acceso; no se copian eventos a calendarios personales.
+  </p>
+</section>
+
+{% if not oauth_configured %}
+<div class="notice error">
+  <p><strong>Falta configurar OAuth en el servidor.</strong></p>
+  <ol class="setup-steps">
+    <li>En Google Cloud Console creá un proyecto y habilitá <em>Google Calendar API</em>.</li>
+    <li>Creá credenciales OAuth 2.0 (tipo aplicación web).</li>
+    <li>Agregá esta URI de redirección autorizada:<br><code>{{ redirect_uri }}</code></li>
+    <li>En el archivo <code>.env</code> completá:
+      <pre>GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+GOOGLE_OAUTH_REDIRECT_URI={{ redirect_uri }}
+APP_BASE_URL=http://127.0.0.1:8000</pre>
+    </li>
+    <li>Reiniciá el servidor y volvé a esta página.</li>
+  </ol>
+</div>
+{% elif connection %}
+<div class="notice">
+  <p><strong>Conectado</strong> como {{ connection.google_email|default:"cuenta Google" }}.</p>
+  <p>Calendario compartido ID: <code>{{ connection.shared_calendar_id|default:"(se crea al sincronizar)" }}</code></p>
+  {% if connection.last_error %}<p class="field-error">Último error: {{ connection.last_error }}</p>{% endif %}
+</div>
+<div class="actions">
+  <form method="post" action="{% url 'google-sync-now' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn primary">Sincronizar ahora</button>
+  </form>
+  <form method="post" action="{% url 'google-disconnect' %}" onsubmit="return confirm('¿Desconectar Google Calendar?');">
+    {% csrf_token %}
+    <button type="submit" class="btn">Desconectar</button>
+  </form>
+</div>
+{% else %}
+<p class="notice">Todavía no hay una cuenta Google vinculada.</p>
+<p><a class="btn primary" href="{% url 'google-connect' %}">Conectar cuenta Google</a></p>
+{% endif %}
+{% endblock %}

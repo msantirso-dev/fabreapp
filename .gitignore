@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+db.sqlite3
+staticfiles/
+media/
+.DS_Store
+*.log
+.idea/
+.vscode/
+google-credentials.json
+*-service-account.json

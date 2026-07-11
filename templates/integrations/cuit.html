@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Consulta CUIT – Integraciones{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow"><a href="{% url 'deadline-list' %}">← Inicio</a></p>
+  <h1>Consulta de CUIT</h1>
+  <p class="lede">
+    Para autocompletar la razón social al crear un cliente necesitás un proveedor.
+    Lo más simple: token gratis de <a href="https://app.afipsdk.com" target="_blank" rel="noopener">Afip SDK</a>.
+  </p>
+</section>
+
+{% if has_provider %}
+<p class="notice">Hay al menos un proveedor configurado. Probá crear un cliente con CUIT.</p>
+{% else %}
+<p class="notice error">Todavía no hay proveedor. Completá el token de Afip SDK abajo.</p>
+{% endif %}
+
+<form method="post" class="stack-form wide-form">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
+    {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+  {% endfor %}
+  <div class="actions">
+    <button type="submit" class="btn primary">Guardar</button>
+    <a class="btn ghost" href="{% url 'client-create' %}">Ir a nuevo cliente</a>
+  </div>
+</form>
+
+<section class="audit-section">
+  <h2>Pasos rápidos (Afip SDK)</h2>
+  <ol class="setup-steps">
+    <li>Registrate en <a href="https://app.afipsdk.com" target="_blank" rel="noopener">app.afipsdk.com</a> (gratis).</li>
+    <li>Copiá tu <strong>access token</strong> y pegalo arriba.</li>
+    <li>Dejá el CUIT en <code>20-40937847-2</code> para pruebas.</li>
+    <li>Guardá y volvé a <a href="{% url 'client-create' %}">Nuevo cliente</a>.</li>
+    <li>Para CUITs reales de clientes, más adelante activá producción con tu certificado ARCA.</li>
+  </ol>
+</section>
+{% endblock %}

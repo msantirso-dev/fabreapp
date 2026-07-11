@@ -1,0 +1,128 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import redirect, render
+from django.views import View
+
+from apps.calendar_sync.models import GoogleCalendarConnection
+from apps.calendar_sync.oauth import (
+    GoogleOAuthNotConfigured,
+    build_oauth_flow,
+    fetch_google_email,
+    oauth_is_configured,
+    save_connection_from_credentials,
+)
+from apps.calendar_sync.services import (
+    clear_calendar_service_cache,
+    ensure_shared_calendar,
+    sync_pending_deadlines,
+)
+
+
+def _is_staff(user) -> bool:
+    return bool(user.is_authenticated and user.is_staff)
+
+
+class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = "integrations/google.html"
+
+    def test_func(self):
+        return _is_staff(self.request.user)
+
+    def get(self, request):
+        connection = GoogleCalendarConnection.get_active()
+        return render(
+            request,
+            self.template_name,
+            {
+                "connection": connection,
+                "oauth_configured": oauth_is_configured(),
+                "redirect_uri": request.build_absolute_uri("/integraciones/google/callback/"),
+            },
+        )
+
+
+@login_required
+@user_passes_test(_is_staff)
+def google_connect_start(request):
+    try:
+        flow = build_oauth_flow()
+    except GoogleOAuthNotConfigured as exc:
+        messages.error(request, str(exc))
+        return redirect("google-integration")
+
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+    )
+    request.session["google_oauth_state"] = state
+    return redirect(authorization_url)
+
+
+@login_required
+@user_passes_test(_is_staff)
+def google_connect_callback(request):
+    state = request.session.pop("google_oauth_state", None)
+    if not state or request.GET.get("state") != state:
+        messages.error(request, "Estado OAuth inválido. Probá conectar de nuevo.")
+        return redirect("google-integration")
+
+    if request.GET.get("error"):
+        messages.error(
+            request,
+            f"Google rechazó la conexión: {request.GET.get('error_description') or request.GET.get('error')}",
+        )
+        return redirect("google-integration")
+
+    try:
+        flow = build_oauth_flow(state=state)
+        flow.fetch_token(authorization_response=request.build_absolute_uri())
+        credentials = flow.credentials
+        email = fetch_google_email(credentials)
+        connection = save_connection_from_credentials(
+            credentials=credentials,
+            user=request.user,
+            google_email=email,
+        )
+        clear_calendar_service_cache()
+        calendar_id = ensure_shared_calendar()
+        connection.refresh_from_db()
+        messages.success(
+            request,
+            f"Cuenta Google conectada ({email}). Calendario compartido listo: {calendar_id}",
+        )
+    except Exception as exc:  # noqa: BLE001
+        messages.error(request, f"No se pudo completar la conexión: {exc}")
+    return redirect("google-integration")
+
+
+@login_required
+@user_passes_test(_is_staff)
+def google_disconnect(request):
+    if request.method != "POST":
+        return redirect("google-integration")
+    GoogleCalendarConnection.objects.filter(is_active=True).update(is_active=False)
+    clear_calendar_service_cache()
+    messages.success(request, "Cuenta Google desconectada.")
+    return redirect("google-integration")
+
+
+@login_required
+@user_passes_test(_is_staff)
+def google_sync_now(request):
+    if request.method != "POST":
+        return redirect("google-integration")
+    if not GoogleCalendarConnection.get_active():
+        messages.error(request, "Primero conectá una cuenta Google.")
+        return redirect("google-integration")
+    try:
+        ensure_shared_calendar()
+        stats = sync_pending_deadlines(limit=200)
+        messages.success(
+            request,
+            f"Sincronización: synced={stats['synced']} errors={stats['errors']} skipped={stats['skipped']}",
+        )
+    except Exception as exc:  # noqa: BLE001
+        messages.error(request, f"Error al sincronizar: {exc}")
+    return redirect("google-integration")

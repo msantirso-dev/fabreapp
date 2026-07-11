@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Confirmar finalización{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow"><a href="{% url 'deadline-detail' deadline.id %}">← Volver al detalle</a></p>
+  <h1>Confirmar finalización</h1>
+  <p class="lede">
+    {{ deadline.obligation_name }} — {{ deadline.client.name }}
+    (vencimiento {{ deadline.due_date|date:"d/m/Y" }})
+  </p>
+</section>
+
+{% if already_completed %}
+  <p class="notice">Este vencimiento ya está completado. La operación es idempotente.</p>
+  <p><a class="btn" href="{% url 'deadline-detail' deadline.id %}">Ver detalle</a></p>
+{% elif not can_complete %}
+  <p class="notice error">No tenés permiso para completar este vencimiento.</p>
+{% else %}
+  {% if error %}<p class="notice error">{{ error }}</p>{% endif %}
+  <form method="post" class="stack-form confirm-form">
+    {% csrf_token %}
+    <p>Esta acción marcará el vencimiento como <strong>Completado</strong>, registrará auditoría y actualizará el mismo evento del calendario compartido (no crea un evento nuevo).</p>
+    <label for="observation">Observación (opcional)</label>
+    <textarea id="observation" name="observation" rows="4" maxlength="5000" placeholder="Presentación realizada correctamente"></textarea>
+    <div class="actions">
+      <button type="submit" class="btn primary">Confirmar y completar</button>
+      <a class="btn ghost" href="{% url 'deadline-detail' deadline.id %}">Cancelar</a>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

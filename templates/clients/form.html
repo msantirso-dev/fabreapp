@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Nuevo cliente{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow"><a href="{% url 'client-list' %}">← Clientes</a></p>
+  <h1>Nuevo cliente</h1>
+  <p class="lede">Ingresá el CUIT y la razón social se completa automáticamente si hay proveedor configurado. <a href="{% url 'cuit-integration' %}">Configurar consulta CUIT</a></p>
+</section>
+
+<form method="post" class="stack-form wide-form" id="client-form">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <label for="id_cuit">CUIT</label>
+  {{ form.cuit }}
+  <div id="cuit-status" class="muted" aria-live="polite"></div>
+  {% if form.cuit.errors %}<div class="field-error">{{ form.cuit.errors }}</div>{% endif %}
+
+  <label for="id_name">Razón social</label>
+  {{ form.name }}
+  {% if form.name.errors %}<div class="field-error">{{ form.name.errors }}</div>{% endif %}
+
+  <label for="id_is_active">{{ form.is_active.label }}</label>
+  {{ form.is_active }}
+  {% if form.is_active.errors %}<div class="field-error">{{ form.is_active.errors }}</div>{% endif %}
+
+  <div class="actions">
+    <button type="submit" class="btn primary">Guardar cliente</button>
+    <a class="btn ghost" href="{% url 'client-list' %}">Cancelar</a>
+  </div>
+</form>
+<script src="/static/js/cuit_lookup.js"></script>
+{% endblock %}

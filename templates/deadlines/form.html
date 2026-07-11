@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow"><a href="{% url 'deadline-list' %}">← Vencimientos</a></p>
+  <h1>{{ page_title }}</h1>
+</section>
+
+{% if not clients_exist %}
+<p class="notice">Primero necesitás un cliente. <a href="{% url 'client-create' %}">Crear cliente</a></p>
+{% else %}
+<form method="post" class="stack-form wide-form">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+  {% endfor %}
+  <div class="actions">
+    <button type="submit" class="btn primary">Guardar</button>
+    <a class="btn ghost" href="{% url 'deadline-list' %}">Cancelar</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

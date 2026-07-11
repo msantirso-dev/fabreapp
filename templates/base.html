@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Estudio Contable{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,560;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{% url 'deadline-list' %}">Estudio Contable</a>
+    <nav>
+      {% if user.is_authenticated %}
+        <a href="{% url 'deadline-list' %}">Vencimientos</a>
+        <a href="{% url 'client-list' %}">Clientes</a>
+        <a href="{% url 'deadline-create' %}">Nuevo</a>
+        {% if user.is_staff %}
+          <a href="{% url 'google-integration' %}">Google</a>
+          <a href="{% url 'cuit-integration' %}">CUIT</a>
+        {% endif %}
+        <span class="nav-user">{{ user.get_full_name_or_username }}</span>
+        <form method="post" action="{% url 'logout' %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="linkish">Salir</button>
+        </form>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="site-main">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

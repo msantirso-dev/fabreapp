@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Vencimientos – Estudio Contable{% endblock %}
+{% block content %}
+<section class="page-head with-actions">
+  <div>
+    <h1>Vencimientos</h1>
+    <p class="lede">Calendario compartido del estudio · sin copias personales.</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{% url 'client-list' %}">Clientes</a>
+    <a class="btn primary" href="{% url 'deadline-create' %}">Nuevo vencimiento</a>
+  </div>
+</section>
+
+{% if not deadlines and client_count == 0 %}
+<p class="notice">Todavía no hay datos. Creá un <a href="{% url 'client-create' %}">cliente</a> y después un vencimiento, o pedile a quien administre el sistema que ejecute <code>python manage.py seed_demo</code>.</p>
+{% endif %}
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Vencimiento</th>
+      <th>Cliente</th>
+      <th>Período</th>
+      <th>Fecha</th>
+      <th>Estado</th>
+      <th>Responsable</th>
+      <th>Sync</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in deadlines %}
+    <tr>
+      <td><a href="{% url 'deadline-detail' d.id %}">{{ d.obligation_name }}</a></td>
+      <td>{{ d.client.name }}</td>
+      <td>{{ d.period }}</td>
+      <td>{{ d.due_date|date:"d/m/Y" }}</td>
+      <td><span class="status status-{{ d.status|lower }}">{{ d.get_status_display }}</span></td>
+      <td>{% if d.assigned_to %}{{ d.assigned_to.get_full_name_or_username }}{% else %}—{% endif %}</td>
+      <td>{{ d.get_google_sync_status_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No hay vencimientos todavía. <a href="{% url 'deadline-create' %}">Crear el primero</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

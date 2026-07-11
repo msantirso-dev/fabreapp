@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Clientes – Estudio Contable{% endblock %}
+{% block content %}
+<section class="page-head with-actions">
+  <div>
+    <h1>Clientes</h1>
+    <p class="lede">Empresas del estudio asociadas a los vencimientos.</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{% url 'deadline-list' %}">Vencimientos</a>
+    <a class="btn primary" href="{% url 'client-create' %}">Nuevo cliente</a>
+  </div>
+</section>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Razón social</th>
+      <th>CUIT</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in clients %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>{{ c.cuit }}</td>
+      <td>{% if c.is_active %}Activo{% else %}Inactivo{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No hay clientes. <a href="{% url 'client-create' %}">Crear el primero</a></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,9 @@
+# Coolify / cron — sincronización del calendario compartido
+# Frecuencia sugerida: */10 * * * *  (cada 10 minutos)
+# Alternativa MVP: 0 * * * *       (cada hora)
+#
+# Comando:
+#   python manage.py sync_google_calendar
+#
+# Primera corrida (crear calendario si falta):
+#   python manage.py sync_google_calendar --ensure-calendar
