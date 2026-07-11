@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fabreapp}
+      POSTGRES_USER: ${POSTGRES_USER:-fabreapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - fabreapp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fabreapp} -d ${POSTGRES_DB:-fabreapp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    environment:
+      PORT: "8000"
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-app.fabregad.com.ar}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://app.fabregad.com.ar}
+      APP_BASE_URL: ${APP_BASE_URL:-https://app.fabregad.com.ar}
+      APPLICATION_NAME: ${APPLICATION_NAME:-fabrenaque}
+      DATABASE_URL: ${DATABASE_URL:-postgres://fabreapp:changeme@db:5432/fabreapp}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://app.fabregad.com.ar/integraciones/google/callback/}
+      GOOGLE_SHARED_CALENDAR_NAME: ${GOOGLE_SHARED_CALENDAR_NAME:-Vencimientos – Estudio Contable}
+      GOOGLE_CALENDAR_TIMEZONE: ${GOOGLE_CALENDAR_TIMEZONE:-America/Argentina/Buenos_Aires}
+      AFIP_SDK_ACCESS_TOKEN: ${AFIP_SDK_ACCESS_TOKEN:-}
+      AFIP_SDK_CUIT: ${AFIP_SDK_CUIT:-20409378472}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/accounts/login/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  fabreapp_pgdata:
