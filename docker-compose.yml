@@ -19,16 +19,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        COOLIFY_BUILD_ID: "20260712-hc8000-v2"
+        COOLIFY_BUILD_ID: "20260712-respect-coolify-port"
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-    expose:
-      - "8000"
+    # No fijar PORT acá: Coolify lo inyecta (3000). Si lo pisamos a 8000, rompe el proxy.
     environment:
-      PORT: "8000"
-      APP_PORT: "8000"
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-app.fabregad.com.ar}
@@ -44,11 +41,11 @@ services:
       AFIP_SDK_ACCESS_TOKEN: ${AFIP_SDK_ACCESS_TOKEN:-}
       AFIP_SDK_CUIT: ${AFIP_SDK_CUIT:-20409378472}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/accounts/login/"]
+      test: ["CMD", "/bin/sh", "/app/scripts/healthcheck.sh"]
       interval: 15s
       timeout: 5s
-      retries: 8
-      start_period: 90s
+      retries: 10
+      start_period: 120s
 
 volumes:
   fabreapp_pgdata:
