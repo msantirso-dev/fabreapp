@@ -20,11 +20,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Coolify suele inyectar PORT=3000 y enrutar a ese puerto.
     expose:
+      - "3000"
       - "8000"
     environment:
-      PORT: "8000"
-      APP_PORT: "8000"
+      # Si Coolify define PORT, manda. Si no, 3000 (default Coolify).
+      PORT: ${PORT:-3000}
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-app.fabregad.com.ar}
@@ -40,7 +42,7 @@ services:
       AFIP_SDK_ACCESS_TOKEN: ${AFIP_SDK_ACCESS_TOKEN:-}
       AFIP_SDK_CUIT: ${AFIP_SDK_CUIT:-20409378472}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/accounts/login/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/accounts/login/"]
       interval: 30s
       timeout: 5s
       retries: 5

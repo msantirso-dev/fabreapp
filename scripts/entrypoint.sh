@@ -25,7 +25,8 @@ PY
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
-# Coolify a veces inyecta PORT=3000; el compose expone 8000.
-# Forzamos 8000 salvo que se defina APP_PORT explícitamente.
-APP_PORT="${APP_PORT:-8000}"
+# Coolify inyecta PORT (suele ser 3000) y el proxy apunta a ese puerto.
+# No forzar 8000: tiene que coincidir con el "Ports Exposes" del servicio en Coolify.
+APP_PORT="${PORT:-8000}"
+echo "Starting gunicorn on 0.0.0.0:${APP_PORT}"
 exec gunicorn config.wsgi:application --bind "0.0.0.0:${APP_PORT}" --workers 2 --timeout 120
