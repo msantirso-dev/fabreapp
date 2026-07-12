@@ -15,9 +15,22 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY", default="dev-insecure-key-change-me")
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-APP_BASE_URL = env("APP_BASE_URL", default="http://localhost:8000")
+# Siempre incluir el dominio de producción para evitar Bad Request (400) / DisallowedHost
+# detrás de Coolify cuando faltan variables de entorno.
+_default_hosts = [
+    "localhost",
+    "127.0.0.1",
+    "app.fabregad.com.ar",
+]
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        [h.strip() for h in env.list("ALLOWED_HOSTS", default=_default_hosts) if h.strip()]
+        + _default_hosts
+    )
+)
+
+APP_BASE_URL = env("APP_BASE_URL", default="https://app.fabregad.com.ar")
 APPLICATION_NAME = env("APPLICATION_NAME", default="fabrenaque")
 
 INSTALLED_APPS = [
@@ -100,7 +113,17 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "login"
 
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:8000"])
+_default_csrf = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://app.fabregad.com.ar",
+]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(
+        [o.strip() for o in env.list("CSRF_TRUSTED_ORIGINS", default=_default_csrf) if o.strip()]
+        + _default_csrf
+    )
+)
 
 # Coolify / reverse proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
