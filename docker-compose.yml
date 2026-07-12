@@ -19,13 +19,16 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        COOLIFY_BUILD_ID: "20260712-respect-coolify-port"
+        COOLIFY_BUILD_ID: "20260712-port-8002"
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-    # No fijar PORT acá: Coolify lo inyecta (3000). Si lo pisamos a 8000, rompe el proxy.
+    expose:
+      - "8002"
     environment:
+      PORT: "8002"
+      APP_PORT: "8002"
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-app.fabregad.com.ar}

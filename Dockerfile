@@ -1,12 +1,12 @@
 FROM python:3.12-slim
 
-ARG COOLIFY_BUILD_ID=20260712-respect-coolify-port
+ARG COOLIFY_BUILD_ID=20260712-port-8002
 ENV COOLIFY_BUILD_ID=${COOLIFY_BUILD_ID}
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-# Coolify sobrescribe PORT en runtime; 3000 es el default típico de Coolify.
-ENV PORT=3000
+ENV PORT=8002
+ENV APP_PORT=8002
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN sed -i 's/\r$//' /app/scripts/entrypoint.sh /app/scripts/healthcheck.sh \
     && SECRET_KEY=build-only DEBUG=False ALLOWED_HOSTS=* \
        python manage.py collectstatic --noinput
 
-EXPOSE 3000 8000
+EXPOSE 8002
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=10 \
   CMD /bin/sh /app/scripts/healthcheck.sh

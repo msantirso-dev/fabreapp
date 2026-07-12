@@ -25,8 +25,8 @@ PY
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
-# CRÍTICO: usar el PORT que inyecta Coolify (default 3000 en Coolify).
-# Si forzamos 8000 y Coolify chequea 3000 → Bad Gateway / healthcheck fail.
-APP_PORT="${PORT:-3000}"
-echo "Starting gunicorn on 0.0.0.0:${APP_PORT} (Coolify PORT=${PORT:-unset})"
+# Puerto fijo pedido: 8002 (Coolify Ports Exposes debe ser 8002).
+APP_PORT="${APP_PORT:-8002}"
+export PORT="${APP_PORT}"
+echo "Starting gunicorn on 0.0.0.0:${APP_PORT}"
 exec gunicorn config.wsgi:application --bind "0.0.0.0:${APP_PORT}" --workers 2 --timeout 120
