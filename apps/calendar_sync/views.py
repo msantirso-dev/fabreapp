@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db import OperationalError, ProgrammingError
 from django.shortcuts import redirect, render
 from django.views import View
 
@@ -33,17 +34,25 @@ class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def _context(self, request, form=None):
         studio = StudioSettings.load()
-        suggested_redirect = request.build_absolute_uri("/integraciones/google/callback/")
+        suggested_redirect = (
+            "https://app.fabregad.com.ar/integraciones/google/callback/"
+        )
+        suggested_base = "https://app.fabregad.com.ar"
         if form is None:
-            if not studio.google_oauth_redirect_uri:
-                studio.google_oauth_redirect_uri = suggested_redirect
-            if not studio.app_base_url:
-                studio.app_base_url = request.build_absolute_uri("/").rstrip("/")
-            form = GoogleOAuthSettingsForm(instance=studio)
+            initial = {
+                "google_oauth_client_id": studio.google_oauth_client_id,
+                "google_oauth_client_secret": studio.google_oauth_client_secret,
+                "google_oauth_redirect_uri": studio.google_oauth_redirect_uri
+                or suggested_redirect,
+                "app_base_url": studio.app_base_url or suggested_base,
+            }
+            form = GoogleOAuthSettingsForm(initial=initial, instance=studio)
         return {
             "connection": GoogleCalendarConnection.get_active(),
             "oauth_configured": oauth_is_configured(),
             "redirect_uri": studio.google_oauth_redirect_uri or suggested_redirect,
+            "saved_client_id": studio.google_oauth_client_id,
+            "has_client_secret": bool(studio.google_oauth_client_secret),
             "form": form,
         }
 
@@ -54,12 +63,36 @@ class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
         studio = StudioSettings.load()
         form = GoogleOAuthSettingsForm(request.POST, instance=studio)
         if form.is_valid():
-            form.save()
-            messages.success(
+            try:
+                obj = form.save(commit=False)
+                obj.save(
+                    update_fields=[
+                        "google_oauth_client_id",
+                        "google_oauth_client_secret",
+                        "google_oauth_redirect_uri",
+                        "app_base_url",
+                        "updated_at",
+                    ]
+                )
+                messages.success(
+                    request,
+                    "Credenciales OAuth guardadas. Ya podés conectar la cuenta Google.",
+                )
+                return redirect("google-integration")
+            except (OperationalError, ProgrammingError) as exc:
+                messages.error(
+                    request,
+                    "No se pudo guardar: falta migrar la base. "
+                    "Redeployá la app o ejecutá: python manage.py migrate. "
+                    f"Detalle: {exc}",
+                )
+            except Exception as exc:  # noqa: BLE001
+                messages.error(request, f"No se pudo guardar: {exc}")
+        else:
+            messages.error(
                 request,
-                "Credenciales OAuth guardadas. Ya podés conectar la cuenta Google.",
+                "No se pudo guardar. Revisá los errores del formulario.",
             )
-            return redirect("google-integration")
         return render(
             request,
             self.template_name,

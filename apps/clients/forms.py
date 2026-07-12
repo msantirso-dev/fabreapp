@@ -58,23 +58,32 @@ class GoogleOAuthSettingsForm(forms.ModelForm):
             "app_base_url": "URL base de la aplicación",
         }
         widgets = {
+            # TextInput (no password): evita que el browser omita el valor al guardar
             "google_oauth_client_id": forms.TextInput(
                 attrs={
                     "placeholder": "xxxxx.apps.googleusercontent.com",
                     "autocomplete": "off",
+                    "spellcheck": "false",
                 }
             ),
-            "google_oauth_client_secret": forms.PasswordInput(
-                render_value=True,
-                attrs={"placeholder": "GOCSPX-...", "autocomplete": "off"},
+            "google_oauth_client_secret": forms.TextInput(
+                attrs={
+                    "placeholder": "GOCSPX-...",
+                    "autocomplete": "off",
+                    "spellcheck": "false",
+                }
             ),
-            "google_oauth_redirect_uri": forms.URLInput(
+            "google_oauth_redirect_uri": forms.TextInput(
                 attrs={
                     "placeholder": "https://app.fabregad.com.ar/integraciones/google/callback/",
+                    "spellcheck": "false",
                 }
             ),
-            "app_base_url": forms.URLInput(
-                attrs={"placeholder": "https://app.fabregad.com.ar"}
+            "app_base_url": forms.TextInput(
+                attrs={
+                    "placeholder": "https://app.fabregad.com.ar",
+                    "spellcheck": "false",
+                }
             ),
         }
         help_texts = {
@@ -83,3 +92,21 @@ class GoogleOAuthSettingsForm(forms.ModelForm):
             "google_oauth_redirect_uri": "Debe coincidir exacto con la URI autorizada en Google Cloud.",
             "app_base_url": "URL pública HTTPS de la app (sin barra final).",
         }
+
+    def clean_google_oauth_client_id(self):
+        return (self.cleaned_data.get("google_oauth_client_id") or "").strip()
+
+    def clean_google_oauth_client_secret(self):
+        return (self.cleaned_data.get("google_oauth_client_secret") or "").strip()
+
+    def clean_google_oauth_redirect_uri(self):
+        value = (self.cleaned_data.get("google_oauth_redirect_uri") or "").strip()
+        if value and not value.startswith(("http://", "https://")):
+            raise forms.ValidationError("La URI debe empezar con https://")
+        return value
+
+    def clean_app_base_url(self):
+        value = (self.cleaned_data.get("app_base_url") or "").strip().rstrip("/")
+        if value and not value.startswith(("http://", "https://")):
+            raise forms.ValidationError("La URL debe empezar con https://")
+        return value

@@ -6,22 +6,30 @@
   <h1>Google Calendar</h1>
   <p class="lede">
     Conectá la cuenta Google del estudio para crear y actualizar el calendario compartido
-    <strong>Vencimientos – Estudio Contable</strong>. Los cambios se ven en todas las cuentas
-    con acceso; no se copian eventos a calendarios personales.
+    <strong>Vencimientos – Estudio Contable</strong>.
   </p>
 </section>
 
 <section class="audit-section">
   <h2>Credenciales OAuth</h2>
-  <p class="lede">Completá estos datos desde Google Cloud Console. Se guardan en la base (no hace falta editar Coolify).</p>
+  <p class="lede">Completá y tocá <strong>Guardar credenciales</strong>. Se guardan en la base de datos.</p>
+
+  {% if saved_client_id %}
+  <p class="notice">
+    Guardado actualmente:
+    Client ID <code>{{ saved_client_id|truncatechars:40 }}</code>
+    · Secret {% if has_client_secret %}sí{% else %}no{% endif %}
+  </p>
+  {% endif %}
+
   <ol class="setup-steps">
     <li>Habilitá <em>Google Calendar API</em> en Google Cloud.</li>
     <li>Creá credenciales OAuth 2.0 (aplicación web).</li>
-    <li>Agregá esta URI autorizada: <code>{{ redirect_uri }}</code></li>
-    <li>Agregá usuarios de prueba si la app está en modo Testing.</li>
+    <li>URI autorizada: <code>{{ redirect_uri }}</code></li>
+    <li>Usuarios de prueba si está en modo Testing.</li>
   </ol>
 
-  <form method="post" class="stack-form wide-form">
+  <form method="post" action="{% url 'google-integration' %}" class="stack-form wide-form" autocomplete="off">
     {% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}
@@ -31,7 +39,7 @@
       {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
     {% endfor %}
     <div class="actions">
-      <button type="submit" class="btn primary">Guardar credenciales</button>
+      <button type="submit" name="save_oauth" value="1" class="btn primary">Guardar credenciales</button>
     </div>
   </form>
 </section>

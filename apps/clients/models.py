@@ -48,13 +48,13 @@ class StudioSettings(models.Model):
         max_length=255,
         blank=True,
     )
-    google_oauth_redirect_uri = models.URLField(
+    google_oauth_redirect_uri = models.CharField(
         "URI de redirección OAuth",
         max_length=500,
         blank=True,
         help_text="Ej: https://app.fabregad.com.ar/integraciones/google/callback/",
     )
-    app_base_url = models.URLField(
+    app_base_url = models.CharField(
         "URL base de la app",
         max_length=500,
         blank=True,
