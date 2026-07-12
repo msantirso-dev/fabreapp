@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.cache import cache
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import redirect, render
 from django.views import View
@@ -8,6 +9,7 @@ from django.views import View
 from apps.calendar_sync.models import GoogleCalendarConnection
 from apps.calendar_sync.oauth import (
     GoogleOAuthNotConfigured,
+    _studio_oauth,
     build_oauth_flow,
     fetch_google_email,
     oauth_is_configured,
@@ -116,15 +118,24 @@ def google_connect_start(request):
         prompt="consent",
     )
     request.session["google_oauth_state"] = state
+    request.session.modified = True
+    cache.set(f"google_oauth_state:{request.user.id}", state, timeout=600)
     return redirect(authorization_url)
 
 
 @login_required
 @user_passes_test(_is_staff)
 def google_connect_callback(request):
-    state = request.session.pop("google_oauth_state", None)
-    if not state or request.GET.get("state") != state:
-        messages.error(request, "Estado OAuth inválido. Probá conectar de nuevo.")
+    expected_state = request.session.pop("google_oauth_state", None)
+    cached_state = cache.get(f"google_oauth_state:{request.user.id}")
+    cache.delete(f"google_oauth_state:{request.user.id}")
+    state = request.GET.get("state")
+    if not state or state not in {expected_state, cached_state}:
+        messages.error(
+            request,
+            "Estado OAuth inválido o la sesión expiró al volver de Google. "
+            "Probá conectar de nuevo (usá el mismo navegador).",
+        )
         return redirect("google-integration")
 
     if request.GET.get("error"):
@@ -134,22 +145,52 @@ def google_connect_callback(request):
         )
         return redirect("google-integration")
 
+    code = request.GET.get("code")
+    if not code:
+        messages.error(request, "Google no devolvió el código de autorización.")
+        return redirect("google-integration")
+
+    connection = None
     try:
         flow = build_oauth_flow(state=state)
-        flow.fetch_token(authorization_response=request.build_absolute_uri())
+        # Usar code directo: más fiable detrás de proxy HTTPS (Coolify)
+        flow.fetch_token(code=code)
         credentials = flow.credentials
-        email = fetch_google_email(credentials)
+        if not credentials.token:
+            raise RuntimeError("Google no devolvió access_token.")
+
+        email = ""
+        try:
+            email = fetch_google_email(credentials)
+        except Exception as exc:  # noqa: BLE001
+            email = ""
+            messages.warning(request, f"Conectado, pero no se pudo leer el email: {exc}")
+
         connection = save_connection_from_credentials(
             credentials=credentials,
             user=request.user,
             google_email=email,
         )
         clear_calendar_service_cache()
-        calendar_id = ensure_shared_calendar()
-        connection.refresh_from_db()
+
+        calendar_id = ""
+        try:
+            calendar_id = ensure_shared_calendar()
+            connection.refresh_from_db()
+        except Exception as exc:  # noqa: BLE001
+            connection.last_error = str(exc)
+            connection.save(update_fields=["last_error", "updated_at"])
+            messages.warning(
+                request,
+                f"Cuenta Google vinculada ({email or 'sin email'}), "
+                f"pero falló la creación del calendario: {exc}",
+            )
+            return redirect("google-integration")
+
         messages.success(
             request,
-            f"Cuenta Google conectada ({email}). Calendario compartido listo: {calendar_id}",
+            f"Cuenta Google conectada ({email or 'OK'}). "
+            f"Calendario compartido: {calendar_id or connection.shared_calendar_id}",
         )
     except Exception as exc:  # noqa: BLE001
         messages.error(request, f"No se pudo completar la conexión: {exc}")

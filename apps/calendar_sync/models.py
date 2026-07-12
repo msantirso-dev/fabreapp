@@ -44,9 +44,11 @@ class GoogleCalendarConnection(models.Model):
 
     @classmethod
     def get_active(cls):
+        # Aceptar conexión con access_token aunque Google no haya devuelto refresh_token
+        # (pasa a veces en reconexiones).
         return (
             cls.objects.filter(is_active=True)
-            .exclude(refresh_token="")
+            .exclude(access_token="")
             .order_by("-updated_at")
             .first()
         )

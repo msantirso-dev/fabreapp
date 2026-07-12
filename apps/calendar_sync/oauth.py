@@ -151,7 +151,13 @@ def save_connection_from_credentials(
         scopes=" ".join(credentials.scopes or GOOGLE_CALENDAR_SCOPES),
         shared_calendar_name=settings.GOOGLE_SHARED_CALENDAR_NAME,
         is_active=True,
+        last_error="",
     )
+    if not connection.refresh_token:
+        logger.warning(
+            "Google OAuth sin refresh_token para %s; la conexión igual queda activa.",
+            google_email or connection.id,
+        )
     return connection
 
 
