@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
-# Bump this to force Coolify rebuild when it skips cached images.
-ARG COOLIFY_BUILD_ID=20260712-8000fix
+# Change this value whenever Coolify skips the build incorrectly.
+ARG COOLIFY_BUILD_ID=20260712-hc8000-v2
 ENV COOLIFY_BUILD_ID=${COOLIFY_BUILD_ID}
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -27,7 +27,8 @@ RUN sed -i 's/\r$//' /app/scripts/entrypoint.sh \
 
 EXPOSE 8000
 
-# Coolify gestiona el healthcheck (path /accounts/login/, port 8000).
-# No definir HEALTHCHECK aquí: evita desfasajes de puerto (3000 vs 8000).
+# Debe coincidir con gunicorn (APP_PORT=8000).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=8 \
+  CMD curl -f http://127.0.0.1:8000/accounts/login/ || exit 1
 
 CMD ["/bin/sh", "/app/scripts/entrypoint.sh"]

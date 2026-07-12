@@ -15,7 +15,11 @@ services:
       retries: 20
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        COOLIFY_BUILD_ID: "20260712-hc8000-v2"
     restart: unless-stopped
     depends_on:
       db:
@@ -39,6 +43,12 @@ services:
       GOOGLE_CALENDAR_TIMEZONE: ${GOOGLE_CALENDAR_TIMEZONE:-America/Argentina/Buenos_Aires}
       AFIP_SDK_ACCESS_TOKEN: ${AFIP_SDK_ACCESS_TOKEN:-}
       AFIP_SDK_CUIT: ${AFIP_SDK_CUIT:-20409378472}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/accounts/login/"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
 
 volumes:
   fabreapp_pgdata:

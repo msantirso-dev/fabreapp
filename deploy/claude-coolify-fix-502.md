@@ -1,23 +1,18 @@
-# Pegá esto en Claude (Chrome) con Coolify abierto
+# Claude Chrome — Coolify fabreapp
 
-Arreglá el deploy de fabreapp (Bad Gateway / healthcheck fail).
+El último error fue:
+- Coolify esperaba healthcheck Docker
+- La imagen no tenía Health → "map has no entry for key Health"
+- Además a veces salta el build ("Build step skipped")
 
-PROBLEMA REAL (de los logs):
-- Gunicorn escucha en: 0.0.0.0:8000
-- Healthcheck de Coolify/Dockerfile intenta: 127.0.0.1:3000
-- Por eso falla y hace rollback
-
-QUÉ HACER EN COOLIFY:
-1. Abrí el recurso Docker Compose de msantirso-dev/fabreapp
-2. Servicio WEB (no db):
-   - Ports Exposes / Container Port / Domain port = **8000**
-   - Path healthcheck (si existe) = `/accounts/login/`
-3. Si hay toggle de Healthcheck custom del Dockerfile: desactivalo o asegurate puerto 8000
-4. Variables: PORT=8000 y APP_PORT=8000 (si existen)
-5. IMPORTANTE: hacé **Force Rebuild** (no redeploy normal).
-   El log anterior dijo "Build step skipped" por mismo SHA; hace falta rebuild forzado tras el nuevo commit.
-6. Esperá que el healthcheck pase
-7. Verificá logs: debe decir `Listening at: http://0.0.0.0:8000`
-8. Abrí https://app.fabregad.com.ar/accounts/login/
-
-Reportá resultado final.
+En Coolify ahora:
+1. Deploy del commit nuevo
+2. Activá "Rebuild without cache" / Force rebuild (NO aceptar skip)
+3. Servicio web:
+   - Ports Exposes = 8000
+   - Domain port = 8000
+4. Healthcheck habilitado, path=/accounts/login/, port=8000
+5. Confirmá en logs:
+   - Listening at: http://0.0.0.0:8000
+   - Healthcheck curl a 8000 (NO 3000)
+6. Abrí https://app.fabregad.com.ar/accounts/login/
