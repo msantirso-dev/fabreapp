@@ -263,6 +263,47 @@ a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset:
 
 .muted { color: var(--muted); margin-top: 0.25rem; }
 
+.status-witness {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem 1.15rem;
+  margin: 0 0 1.5rem;
+  background: rgba(255,255,255,0.62);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--line);
+}
+
+.status-witness-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  background: #8a8a8a;
+}
+
+.status-witness-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.status-witness-detail {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.status-ok { border-left-color: var(--accent); }
+.status-ok .status-witness-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(15, 107, 92, 0.18); }
+
+.status-warn { border-left-color: #b7791f; }
+.status-warn .status-witness-dot { background: #b7791f; box-shadow: 0 0 0 4px rgba(183, 121, 31, 0.18); }
+
+.status-off { border-left-color: #6b7280; }
+.status-off .status-witness-dot { background: #6b7280; }
+
 @media (max-width: 720px) {
   .data-table { display: block; overflow-x: auto; }
   .site-header { padding-inline: 1rem; }

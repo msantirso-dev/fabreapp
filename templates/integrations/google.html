@@ -10,6 +10,48 @@
   </p>
 </section>
 
+{# Testigo de estado — siempre visible arriba #}
+{% if google_status == "connected" %}
+<div class="status-witness status-ok" role="status">
+  <div class="status-witness-dot" aria-hidden="true"></div>
+  <div>
+    <p class="status-witness-title">Conectado a Google</p>
+    <p class="status-witness-detail">
+      Cuenta: <strong>{{ connection.google_email|default:"cuenta Google" }}</strong>
+      {% if connection.shared_calendar_id %}
+        · Calendario: <code>{{ connection.shared_calendar_id }}</code>
+      {% else %}
+        · Calendario compartido pendiente de crear/sincronizar
+      {% endif %}
+    </p>
+    {% if connection.last_error %}
+      <p class="field-error">Último error de sync: {{ connection.last_error }}</p>
+    {% endif %}
+  </div>
+</div>
+{% elif google_status == "credentials_ready" %}
+<div class="status-witness status-warn" role="status">
+  <div class="status-witness-dot" aria-hidden="true"></div>
+  <div>
+    <p class="status-witness-title">Credenciales OK · falta vincular cuenta</p>
+    <p class="status-witness-detail">
+      Client ID y Secret están guardados, pero todavía no hay una cuenta Google vinculada al estudio.
+      Usá el botón <strong>Conectar cuenta Google</strong> más abajo.
+    </p>
+  </div>
+</div>
+{% else %}
+<div class="status-witness status-off" role="status">
+  <div class="status-witness-dot" aria-hidden="true"></div>
+  <div>
+    <p class="status-witness-title">No conectado a Google</p>
+    <p class="status-witness-detail">
+      Primero guardá Client ID y Client Secret. Después vas a poder conectar la cuenta.
+    </p>
+  </div>
+</div>
+{% endif %}
+
 <section class="audit-section">
   <h2>Credenciales OAuth</h2>
   <p class="lede">Completá y tocá <strong>Guardar credenciales</strong>. Se guardan en la base de datos.</p>
@@ -44,26 +86,29 @@
   </form>
 </section>
 
-{% if oauth_configured and connection %}
-<div class="notice">
-  <p><strong>Conectado</strong> como {{ connection.google_email|default:"cuenta Google" }}.</p>
-  <p>Calendario compartido ID: <code>{{ connection.shared_calendar_id|default:"(se crea al sincronizar)" }}</code></p>
-  {% if connection.last_error %}<p class="field-error">Último error: {{ connection.last_error }}</p>{% endif %}
-</div>
-<div class="actions">
-  <form method="post" action="{% url 'google-sync-now' %}">
-    {% csrf_token %}
-    <button type="submit" class="btn primary">Sincronizar ahora</button>
-  </form>
-  <form method="post" action="{% url 'google-disconnect' %}" onsubmit="return confirm('¿Desconectar Google Calendar?');">
-    {% csrf_token %}
-    <button type="submit" class="btn">Desconectar</button>
-  </form>
-</div>
-{% elif oauth_configured %}
-<p class="notice">Credenciales OAuth listas. Falta vincular la cuenta Google del estudio.</p>
-<p><a class="btn primary" href="{% url 'google-connect' %}">Conectar cuenta Google</a></p>
-{% else %}
-<p class="notice">Guardá Client ID y Client Secret arriba para habilitar el botón de conexión.</p>
-{% endif %}
+<section class="audit-section">
+  <h2>Cuenta Google del estudio</h2>
+
+  {% if google_status == "connected" %}
+  <p class="notice">
+    Ya está vinculada. No hace falta volver a conectar salvo que quieras cambiar de cuenta.
+  </p>
+  <div class="actions">
+    <form method="post" action="{% url 'google-sync-now' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn primary">Sincronizar ahora</button>
+    </form>
+    <a class="btn" href="{% url 'google-connect' %}">Reconectar / cambiar cuenta</a>
+    <form method="post" action="{% url 'google-disconnect' %}" onsubmit="return confirm('¿Desconectar Google Calendar?');">
+      {% csrf_token %}
+      <button type="submit" class="btn">Desconectar</button>
+    </form>
+  </div>
+  {% elif google_status == "credentials_ready" %}
+  <p class="notice">Credenciales OAuth listas. Falta vincular la cuenta Google del estudio.</p>
+  <p><a class="btn primary" href="{% url 'google-connect' %}">Conectar cuenta Google</a></p>
+  {% else %}
+  <p class="notice">Guardá Client ID y Client Secret arriba para habilitar el botón de conexión.</p>
+  {% endif %}
+</section>
 {% endblock %}

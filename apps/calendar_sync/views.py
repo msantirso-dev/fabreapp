@@ -9,7 +9,6 @@ from django.views import View
 from apps.calendar_sync.models import GoogleCalendarConnection
 from apps.calendar_sync.oauth import (
     GoogleOAuthNotConfigured,
-    _studio_oauth,
     build_oauth_flow,
     fetch_google_email,
     oauth_is_configured,
@@ -40,6 +39,15 @@ class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
             "https://app.fabregad.com.ar/integraciones/google/callback/"
         )
         suggested_base = "https://app.fabregad.com.ar"
+        connection = GoogleCalendarConnection.get_active()
+        oauth_ok = oauth_is_configured()
+        if connection:
+            google_status = "connected"
+        elif oauth_ok:
+            google_status = "credentials_ready"
+        else:
+            google_status = "not_configured"
+
         if form is None:
             initial = {
                 "google_oauth_client_id": studio.google_oauth_client_id,
@@ -50,8 +58,9 @@ class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
             form = GoogleOAuthSettingsForm(initial=initial, instance=studio)
         return {
-            "connection": GoogleCalendarConnection.get_active(),
-            "oauth_configured": oauth_is_configured(),
+            "connection": connection,
+            "oauth_configured": oauth_ok,
+            "google_status": google_status,
             "redirect_uri": studio.google_oauth_redirect_uri or suggested_redirect,
             "saved_client_id": studio.google_oauth_client_id,
             "has_client_secret": bool(studio.google_oauth_client_secret),
