@@ -25,6 +25,32 @@ PY
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
+# Crear superusuario si está definido por env (Coolify).
+if [ -n "${DJANGO_SUPERUSER_USERNAME:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+  echo "Ensuring superuser ${DJANGO_SUPERUSER_USERNAME} exists..."
+  python - <<'PY'
+import os
+import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+from django.contrib.auth import get_user_model
+User = get_user_model()
+username = os.environ["DJANGO_SUPERUSER_USERNAME"]
+password = os.environ["DJANGO_SUPERUSER_PASSWORD"]
+email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@fabregad.com.ar")
+user, created = User.objects.get_or_create(
+    username=username,
+    defaults={"email": email, "is_staff": True, "is_superuser": True},
+)
+user.email = email
+user.is_staff = True
+user.is_superuser = True
+user.set_password(password)
+user.save()
+print("Superuser created." if created else "Superuser updated.")
+PY
+fi
+
 # Puerto fijo pedido: 8002 (Coolify Ports Exposes debe ser 8002).
 APP_PORT="${APP_PORT:-8002}"
 export PORT="${APP_PORT}"

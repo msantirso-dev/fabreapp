@@ -43,6 +43,9 @@ services:
       GOOGLE_CALENDAR_TIMEZONE: ${GOOGLE_CALENDAR_TIMEZONE:-America/Argentina/Buenos_Aires}
       AFIP_SDK_ACCESS_TOKEN: ${AFIP_SDK_ACCESS_TOKEN:-}
       AFIP_SDK_CUIT: ${AFIP_SDK_CUIT:-20409378472}
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-admin}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-Fabregad2026!}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@fabregad.com.ar}
     healthcheck:
       test: ["CMD", "/bin/sh", "/app/scripts/healthcheck.sh"]
       interval: 15s
