@@ -47,6 +47,14 @@ def build_event_title(deadline: Deadline) -> str:
 
 def build_event_description(deadline: Deadline) -> str:
     base = settings.APP_BASE_URL.rstrip("/")
+    try:
+        from apps.clients.models import StudioSettings
+
+        studio_base = StudioSettings.load().app_base_url
+        if studio_base:
+            base = studio_base.rstrip("/")
+    except Exception:  # noqa: BLE001
+        pass
     detail_url = f"{base}/deadlines/{deadline.id}"
     complete_url = f"{base}/deadlines/{deadline.id}/complete"
 

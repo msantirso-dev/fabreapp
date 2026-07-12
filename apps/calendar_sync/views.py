@@ -17,6 +17,8 @@ from apps.calendar_sync.services import (
     ensure_shared_calendar,
     sync_pending_deadlines,
 )
+from apps.clients.forms import GoogleOAuthSettingsForm
+from apps.clients.models import StudioSettings
 
 
 def _is_staff(user) -> bool:
@@ -29,16 +31,40 @@ class GoogleIntegrationView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         return _is_staff(self.request.user)
 
+    def _context(self, request, form=None):
+        studio = StudioSettings.load()
+        suggested_redirect = request.build_absolute_uri("/integraciones/google/callback/")
+        if form is None:
+            if not studio.google_oauth_redirect_uri:
+                studio.google_oauth_redirect_uri = suggested_redirect
+            if not studio.app_base_url:
+                studio.app_base_url = request.build_absolute_uri("/").rstrip("/")
+            form = GoogleOAuthSettingsForm(instance=studio)
+        return {
+            "connection": GoogleCalendarConnection.get_active(),
+            "oauth_configured": oauth_is_configured(),
+            "redirect_uri": studio.google_oauth_redirect_uri or suggested_redirect,
+            "form": form,
+        }
+
     def get(self, request):
-        connection = GoogleCalendarConnection.get_active()
+        return render(request, self.template_name, self._context(request))
+
+    def post(self, request):
+        studio = StudioSettings.load()
+        form = GoogleOAuthSettingsForm(request.POST, instance=studio)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Credenciales OAuth guardadas. Ya podés conectar la cuenta Google.",
+            )
+            return redirect("google-integration")
         return render(
             request,
             self.template_name,
-            {
-                "connection": connection,
-                "oauth_configured": oauth_is_configured(),
-                "redirect_uri": request.build_absolute_uri("/integraciones/google/callback/"),
-            },
+            self._context(request, form=form),
+            status=400,
         )
 
 

@@ -26,45 +26,86 @@ class GoogleOAuthNotConfigured(Exception):
     pass
 
 
+def _studio_oauth() -> dict:
+    """Lee OAuth desde DB (formulario web) con fallback a settings/.env."""
+    client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
+    redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
+    app_base_url = settings.APP_BASE_URL
+
+    try:
+        from apps.clients.models import StudioSettings
+
+        studio = StudioSettings.load()
+        if studio.google_oauth_client_id:
+            client_id = studio.google_oauth_client_id
+        if studio.google_oauth_client_secret:
+            client_secret = studio.google_oauth_client_secret
+        if studio.google_oauth_redirect_uri:
+            redirect_uri = studio.google_oauth_redirect_uri
+        if studio.app_base_url:
+            app_base_url = studio.app_base_url.rstrip("/")
+    except Exception:  # noqa: BLE001
+        logger.debug("StudioSettings OAuth unavailable; using env settings")
+
+    if not redirect_uri and app_base_url:
+        redirect_uri = f"{app_base_url.rstrip('/')}/integraciones/google/callback/"
+
+    return {
+        "client_id": client_id or "",
+        "client_secret": client_secret or "",
+        "redirect_uri": redirect_uri or "",
+        "app_base_url": app_base_url or "",
+    }
+
+
 def oauth_is_configured() -> bool:
-    return bool(
-        settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET
-    )
+    cfg = _studio_oauth()
+    return bool(cfg["client_id"] and cfg["client_secret"] and cfg["redirect_uri"])
 
 
 def _allow_http_localhost() -> None:
-    if settings.DEBUG:
+    cfg = _studio_oauth()
+    redirect = cfg["redirect_uri"]
+    if settings.DEBUG or redirect.startswith("http://"):
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 def _client_config() -> dict:
-    if not oauth_is_configured():
+    cfg = _studio_oauth()
+    if not (cfg["client_id"] and cfg["client_secret"]):
         raise GoogleOAuthNotConfigured(
-            "Configurá GOOGLE_OAUTH_CLIENT_ID y GOOGLE_OAUTH_CLIENT_SECRET en .env"
+            "Completá Client ID y Client Secret en el formulario de Google."
+        )
+    if not cfg["redirect_uri"]:
+        raise GoogleOAuthNotConfigured(
+            "Completá la URI de redirección en el formulario de Google."
         )
     return {
         "web": {
-            "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
-            "client_secret": settings.GOOGLE_OAUTH_CLIENT_SECRET,
+            "client_id": cfg["client_id"],
+            "client_secret": cfg["client_secret"],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [settings.GOOGLE_OAUTH_REDIRECT_URI],
+            "redirect_uris": [cfg["redirect_uri"]],
         }
     }
 
 
 def build_oauth_flow(*, state: str | None = None) -> Flow:
     _allow_http_localhost()
+    cfg = _studio_oauth()
     flow = Flow.from_client_config(
         _client_config(),
         scopes=GOOGLE_CALENDAR_SCOPES,
         state=state,
     )
-    flow.redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
+    flow.redirect_uri = cfg["redirect_uri"]
     return flow
 
 
 def credentials_from_connection(connection: GoogleCalendarConnection) -> Credentials:
+    cfg = _studio_oauth()
     expiry = None
     if connection.token_expiry:
         expiry = connection.token_expiry.astimezone(dt_timezone.utc).replace(tzinfo=None)
@@ -73,8 +114,8 @@ def credentials_from_connection(connection: GoogleCalendarConnection) -> Credent
         token=connection.access_token or None,
         refresh_token=connection.refresh_token or None,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=settings.GOOGLE_OAUTH_CLIENT_ID,
-        client_secret=settings.GOOGLE_OAUTH_CLIENT_SECRET,
+        client_id=cfg["client_id"],
+        client_secret=cfg["client_secret"],
         scopes=GOOGLE_CALENDAR_SCOPES,
         expiry=expiry,
     )

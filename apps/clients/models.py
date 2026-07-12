@@ -40,6 +40,27 @@ class StudioSettings(models.Model):
         default=False,
         help_text="Usar producción ARCA (requiere certificado propio en Afip SDK).",
     )
+
+    # Google OAuth (configurable desde la web)
+    google_oauth_client_id = models.CharField("Google Client ID", max_length=255, blank=True)
+    google_oauth_client_secret = models.CharField(
+        "Google Client Secret",
+        max_length=255,
+        blank=True,
+    )
+    google_oauth_redirect_uri = models.URLField(
+        "URI de redirección OAuth",
+        max_length=500,
+        blank=True,
+        help_text="Ej: https://app.fabregad.com.ar/integraciones/google/callback/",
+    )
+    app_base_url = models.URLField(
+        "URL base de la app",
+        max_length=500,
+        blank=True,
+        help_text="Ej: https://app.fabregad.com.ar",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

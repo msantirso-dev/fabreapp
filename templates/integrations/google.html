@@ -11,23 +11,32 @@
   </p>
 </section>
 
-{% if not oauth_configured %}
-<div class="notice error">
-  <p><strong>Falta configurar OAuth en el servidor.</strong></p>
+<section class="audit-section">
+  <h2>Credenciales OAuth</h2>
+  <p class="lede">Completá estos datos desde Google Cloud Console. Se guardan en la base (no hace falta editar Coolify).</p>
   <ol class="setup-steps">
-    <li>En Google Cloud Console creá un proyecto y habilitá <em>Google Calendar API</em>.</li>
-    <li>Creá credenciales OAuth 2.0 (tipo aplicación web).</li>
-    <li>Agregá esta URI de redirección autorizada:<br><code>{{ redirect_uri }}</code></li>
-    <li>En el archivo <code>.env</code> completá:
-      <pre>GOOGLE_OAUTH_CLIENT_ID=...
-GOOGLE_OAUTH_CLIENT_SECRET=...
-GOOGLE_OAUTH_REDIRECT_URI={{ redirect_uri }}
-APP_BASE_URL=http://127.0.0.1:8000</pre>
-    </li>
-    <li>Reiniciá el servidor y volvé a esta página.</li>
+    <li>Habilitá <em>Google Calendar API</em> en Google Cloud.</li>
+    <li>Creá credenciales OAuth 2.0 (aplicación web).</li>
+    <li>Agregá esta URI autorizada: <code>{{ redirect_uri }}</code></li>
+    <li>Agregá usuarios de prueba si la app está en modo Testing.</li>
   </ol>
-</div>
-{% elif connection %}
+
+  <form method="post" class="stack-form wide-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+    {% endfor %}
+    <div class="actions">
+      <button type="submit" class="btn primary">Guardar credenciales</button>
+    </div>
+  </form>
+</section>
+
+{% if oauth_configured and connection %}
 <div class="notice">
   <p><strong>Conectado</strong> como {{ connection.google_email|default:"cuenta Google" }}.</p>
   <p>Calendario compartido ID: <code>{{ connection.shared_calendar_id|default:"(se crea al sincronizar)" }}</code></p>
@@ -43,8 +52,10 @@ APP_BASE_URL=http://127.0.0.1:8000</pre>
     <button type="submit" class="btn">Desconectar</button>
   </form>
 </div>
-{% else %}
-<p class="notice">Todavía no hay una cuenta Google vinculada.</p>
+{% elif oauth_configured %}
+<p class="notice">Credenciales OAuth listas. Falta vincular la cuenta Google del estudio.</p>
 <p><a class="btn primary" href="{% url 'google-connect' %}">Conectar cuenta Google</a></p>
+{% else %}
+<p class="notice">Guardá Client ID y Client Secret arriba para habilitar el botón de conexión.</p>
 {% endif %}
 {% endblock %}
